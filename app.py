@@ -87,4 +87,4 @@ async def test(ctx):
     await ctx.send("test", embed=embed, view=view)
 
 
-bot.run('MTA2ODI3MzI5MTczNjkxMTk1Mg.GiHJi3.gTptYkmcx8A6H74uN7AIqjQbsydmtJ164e-5qY')
+bot.run(token)
