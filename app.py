@@ -1,13 +1,12 @@
 import logging
 import discord
-import requests
+import config
 
-from userprofile import UserProfile
-from music import *
+from modules.userprofile import UserProfile
+from modules.music import *
 from discord.ext import commands
 from discord import Embed
 from discord import ui
-from unibot_api import *
 
 # discord.py setup
 
@@ -28,63 +27,74 @@ async def on_ready():
 
 @bot.command()
 async def wonderhoy(ctx):
-
     print(f'{ctx.author} asked for wonderhoy (ID: {ctx.author.id})')
-
-    embed = Embed()
-    embed.set_image(url='https://storage.sekai.best/sekai-assets/stamp/stamp0168_rip/stamp0168/stamp0168.png')
-    await ctx.send('Wonderhoy!!!', embed=embed)
+    await ctx.send(f'{config.asset}/stamp/stamp0168/stamp0168/stamp0168.png')
 
 
 @bot.command()
-async def userinfo(ctx, userid='120513064353689609'):
-    print(f'{ctx.author} asked for user info of {userid}')
+async def userinfo(ctx, user_id='120513064353689609'):
+    print(f'{ctx.author} asked for user info of {user_id}')
 
-    userprofile = UserProfile()
-    userprofile.getprofile(userid=userid)
+    userprofile = UserProfile(user_id)
 
-    embed = Embed()
-    embed.add_field(name='Name', value=userprofile.name)
-    embed.add_field(name='Rank', value=userprofile.rank)
-    embed.add_field(name='User ID', value=userprofile.userid)
+    if userprofile.user_id == 0:
+        await ctx.reply(f'找不到该用户喵')
+    else:
+        embed = Embed()
+        embed.title = userprofile.name
+        embed.description = userprofile.word
+        embed.add_field(name='等级', value=userprofile.rank)
+        embed.set_thumbnail(url=userprofile.get_profile_picture())
 
-    await ctx.send(f'User Information about {userid}', embed=embed)
-
+        await ctx.reply(embed=embed)
 
 @bot.command()
-async def songinfo(ctx, songid):
-    print(f'{ctx.author} asked for song info for {songid}')
+async def songinfo(ctx, *, alias):
+    print(f'{ctx.author} asked for song info for {alias}')
 
-    music = Music(int(songid))
+    music_id = get_id_from_alias(alias)
 
-    if music.songid == 0:
-        await ctx.send(f'找不到这首歌喵')
+    music = Music(int(music_id))
+
+    if music.music_id == 0:
+        await ctx.reply(f'找不到这首歌喵')
     else:
         embed = Embed()
         embed.title = music.title
         embed.description = music.pronunciation
-        embed.add_field(name='编号', value=music.songid)
-        embed.add_field(name='标签', value=music.get_tag_str())
+        embed.set_footer(text=f'作词：{music.lyricist}\t作曲：{music.composer}\t编曲：{music.arranger}')
+        embed.add_field(name='编号', value=music.music_id)
+        embed.add_field(name='标签', value=music.get_tags_str())
         embed.add_field(name='类别', value=music.get_categories_str())
-        embed.add_field(name='作词', value=music.lyricist)
-        embed.add_field(name='编曲', value=music.composer)
-        embed.add_field(name='作曲', value=music.arranger)
-        embed.add_field(name='难度', value=music.get_diff_str(), inline=False)
-        embed.add_field(name='物量', value=music.get_note_count_str(), inline=False)
-        embed.set_thumbnail(url=f'https://storage.sekai.best/sekai-assets/music/jacket/{music.asset_bundle_name}_rip/{music.asset_bundle_name}.png')
+        embed.add_field(name='难度', value=music.get_diffs_str(), inline=False)
+        embed.add_field(name='物量', value=music.get_note_counts_str(), inline=False)
+        embed.set_thumbnail(
+            url=f'{config.asset}/music/jacket/{music.asset_bundle_name}/{music.asset_bundle_name}.png')
 
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
 
 
 @bot.command()
-async def test(ctx):
-    view = ui.View()
-    view.add_item(ui.Button(label='test'))
+async def songinfoid(ctx, music_id):
+    print(f'{ctx.author} asked for song info for {music_id}')
 
-    embed = Embed()
-    embed.add_field(name='Name', value='')
+    music = Music(int(music_id))
 
-    await ctx.send("test", embed=embed, view=view)
+    if music.music_id == 0:
+        await ctx.reply(f'找不到这首歌喵')
+    else:
+        embed = Embed()
+        embed.title = music.title
+        embed.description = music.pronunciation
+        embed.set_footer(text=f'作词：{music.lyricist}\t作曲：{music.composer}\t编曲：{music.arranger}')
+        embed.add_field(name='编号', value=music.music_id)
+        embed.add_field(name='标签', value=music.get_tags_str())
+        embed.add_field(name='类别', value=music.get_categories_str())
+        embed.add_field(name='难度', value=music.get_diffs_str(), inline=False)
+        embed.add_field(name='物量', value=music.get_note_counts_str(), inline=False)
+        embed.set_thumbnail(url=f'{config.asset}/music/jacket/{music.asset_bundle_name}/{music.asset_bundle_name}.png')
+
+        await ctx.reply(embed=embed)
 
 
-bot.run(token)
+bot.run(config.token)
