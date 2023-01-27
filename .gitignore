@@ -1,3 +1,4 @@
 config.py
 api_test.ipynb
 discord.log
+__pycache__/
