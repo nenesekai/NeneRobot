@@ -1,12 +1,12 @@
 import json
 import requests
 
-from config import masterdb, asset, mongodb
-from pymongo import MongoClient
+from config import API, MASTER_DB, ASSET, MONGODB
+from discord import Embed
 
 
 def get_id_from_alias(alias):
-    response = requests.get(f'https://api.unipjsk.com/getsongid/{alias}')
+    response = requests.get(f'{API}/getsongid/{alias}')
     data = response.json()
 
     if data['status'] == 'success':
@@ -16,8 +16,7 @@ def get_id_from_alias(alias):
 
 
 def get_music(music_id):
-    with open(f'{masterdb}/musics.json', mode='r', encoding='utf-8') as f:
-        musics = json.load(f)
+    musics = requests.get(url=f'{MASTER_DB}/musics.json').json()
 
     for music in musics:
         if music['id'] == music_id:
@@ -27,8 +26,7 @@ def get_music(music_id):
 
 
 def get_music_tag(music_id):
-    with open(f'{masterdb}/musicTags.json', mode='r', encoding='utf-8') as f:
-        music_tags = json.load(f)
+    music_tags = requests.get(url=f'{MASTER_DB}/musicTags.json').json()
 
     tag = []
 
@@ -40,8 +38,7 @@ def get_music_tag(music_id):
 
 
 def get_diff_and_note_count(music_id):
-    with open(f'{masterdb}/musicDifficulties.json', mode='r', encoding='utf-8') as f:
-        music_diffs_db = json.load(f)
+    music_diffs_db = requests.get(url=f'{MASTER_DB}/musicDifficulties.json').json()
 
     diff = [0, 0, 0, 0, 0]
     note_count = [0, 0, 0, 0, 0]
@@ -112,5 +109,19 @@ class Music(object):
     def get_note_counts_str(self):
         return f'Easy: {self.note_count[0]}, Normal: {self.note_count[1]}, Hard: {self.note_count[2]}, Expert: {self.note_count[3]}, Master: {self.note_count[4]}'
 
-    def get_cover(self):
-        return f'{asset}/music/jacket/{self.asset_bundle_name}/{self.asset_bundle_name}.png'
+    def get_cover_url(self):
+        return f'{ASSET}/music/jacket/{self.asset_bundle_name}/{self.asset_bundle_name}.png'
+
+    def get_discord_embed(self):
+        embed = Embed()
+        embed.title = self.title
+        embed.description = self.pronunciation
+        embed.set_footer(text=f'作词：{self.lyricist}\t作曲：{self.composer}\t编曲：{self.arranger}')
+        embed.add_field(name='编号', value=self.music_id)
+        embed.add_field(name='标签', value=self.get_tags_str())
+        embed.add_field(name='类别', value=self.get_categories_str())
+        embed.add_field(name='难度', value=self.get_diffs_str(), inline=False)
+        embed.add_field(name='物量', value=self.get_note_counts_str(), inline=False)
+        embed.set_thumbnail(url=self.get_cover_url())
+
+        return embed

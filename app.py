@@ -2,7 +2,7 @@ import logging
 import discord
 import config
 
-from modules.userprofile import UserProfile
+from modules.userprofile import *
 from modules.music import *
 from discord.ext import commands
 from discord import Embed
@@ -28,25 +28,45 @@ async def on_ready():
 @bot.command()
 async def wonderhoy(ctx):
     print(f'{ctx.author} asked for wonderhoy (ID: {ctx.author.id})')
-    await ctx.send(f'{config.asset}/stamp/stamp0168/stamp0168/stamp0168.png')
+    await ctx.send(f'{config.ASSET}/stamp/stamp0168/stamp0168/stamp0168.png')
 
 
 @bot.command()
-async def userinfo(ctx, user_id='120513064353689609'):
-    print(f'{ctx.author} asked for user info of {user_id}')
+async def bind(ctx, user_id):
+    print(f'{ctx.author} wants to bind {user_id}')
 
-    userprofile = UserProfile(user_id)
+    if bind_user_id_with_discord_id(user_id, ctx.author.id):
+        userprofile = UserProfile(user_id)
 
-    if userprofile.user_id == 0:
-        await ctx.reply(f'找不到该用户喵')
+        await ctx.reply(f'成功绑定 {user_id}', embed=userprofile.get_discord_embed())
     else:
-        embed = Embed()
-        embed.title = userprofile.name
-        embed.description = userprofile.word
-        embed.add_field(name='等级', value=userprofile.rank)
-        embed.set_thumbnail(url=userprofile.get_profile_picture())
+        await ctx.reply(f'绑定失败，当前账号已绑定{get_user_id_from_discord_id(ctx.author.id)}')
 
-        await ctx.reply(embed=embed)
+
+@bot.command()
+async def userinfo(ctx, user_id=None):
+
+    if user_id is None:
+        print(f'{ctx.author} ask for his profile')
+
+        user_id = get_user_id_from_discord_id(ctx.author.id)
+
+        if user_id == 0:
+            await ctx.reply(f'没有查询到，可能是你还没有绑定，请使用bind指令绑定你的pjsk账号')
+        else:
+            userprofile = UserProfile(user_id)
+            await ctx.reply(embed=userprofile.get_discord_embed())
+
+    else:
+        print(f'{ctx.author} asked for user info of {user_id}')
+
+        userprofile = UserProfile(user_id)
+
+        if userprofile.user_id == 0:
+            await ctx.reply(f'找不到该用户喵')
+        else:
+            await ctx.reply(embed=userprofile.get_discord_embed())
+
 
 @bot.command()
 async def songinfo(ctx, *, alias):
@@ -59,19 +79,7 @@ async def songinfo(ctx, *, alias):
     if music.music_id == 0:
         await ctx.reply(f'找不到这首歌喵')
     else:
-        embed = Embed()
-        embed.title = music.title
-        embed.description = music.pronunciation
-        embed.set_footer(text=f'作词：{music.lyricist}\t作曲：{music.composer}\t编曲：{music.arranger}')
-        embed.add_field(name='编号', value=music.music_id)
-        embed.add_field(name='标签', value=music.get_tags_str())
-        embed.add_field(name='类别', value=music.get_categories_str())
-        embed.add_field(name='难度', value=music.get_diffs_str(), inline=False)
-        embed.add_field(name='物量', value=music.get_note_counts_str(), inline=False)
-        embed.set_thumbnail(
-            url=f'{config.asset}/music/jacket/{music.asset_bundle_name}/{music.asset_bundle_name}.png')
-
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=music.get_discord_embed())
 
 
 @bot.command()
@@ -83,18 +91,7 @@ async def songinfoid(ctx, music_id):
     if music.music_id == 0:
         await ctx.reply(f'找不到这首歌喵')
     else:
-        embed = Embed()
-        embed.title = music.title
-        embed.description = music.pronunciation
-        embed.set_footer(text=f'作词：{music.lyricist}\t作曲：{music.composer}\t编曲：{music.arranger}')
-        embed.add_field(name='编号', value=music.music_id)
-        embed.add_field(name='标签', value=music.get_tags_str())
-        embed.add_field(name='类别', value=music.get_categories_str())
-        embed.add_field(name='难度', value=music.get_diffs_str(), inline=False)
-        embed.add_field(name='物量', value=music.get_note_counts_str(), inline=False)
-        embed.set_thumbnail(url=f'{config.asset}/music/jacket/{music.asset_bundle_name}/{music.asset_bundle_name}.png')
-
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=music.get_discord_embed())
 
 
-bot.run(config.token)
+bot.run(config.TOKEN)
