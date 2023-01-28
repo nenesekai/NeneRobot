@@ -1,8 +1,15 @@
 import json
 import requests
 
-from PIL import Image, ImageFont, ImageDraw, ImageFilter
+from PIL import Image
 from config import ASSET, MASTER_DB
+
+
+def get_card_thumbnail_url(asset_bundle_name, special_training=False):
+    if special_training:
+        return f"{ASSET}/character/member_cutout/{asset_bundle_name}/after_training/thumbnail_xl.png"
+    else:
+        return f"{ASSET}/character/member_cutout/{asset_bundle_name}/normal/thumbnail_xl.png"
 
 
 def generate_honor(honor, is_main=True):
@@ -44,11 +51,15 @@ def generate_honor(honor, is_main=True):
         filename = 'honor'
         main_name = 'rank_main.png'
         sub_name = 'rank_sub.png'
+        degree_main_name = 'degree_main.png'
+        degree_sub_name = 'degree_sub.png'
 
         if honor_type == 'rank_match':
             filename = 'rank_live/honor'
-            main_name = 'main.png'
-            sub_name = 'sub.png'
+            main_name = 'main/main.png'
+            sub_name = 'sub/sub.png'
+            degree_main_name = 'degree_main/degree_main.png'
+            degree_sub_name = 'degree_sub/degree_sub.png'
 
         if is_main:  # 大图
             if honor_rarity == 'low':
@@ -62,7 +73,7 @@ def generate_honor(honor, is_main=True):
 
             if background_asset_bundle_name == '':
                 rank_pic = None
-                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/degree_main.png', stream=True).raw)
+                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/{degree_main_name}', stream=True).raw)
                 try:
                     rank_pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/{main_name}', stream=True).raw)
                 except:
@@ -76,7 +87,7 @@ def generate_honor(honor, is_main=True):
                     r, g, b, mask = rank_pic.split()
                     pic.paste(rank_pic, (190, 0), mask)
             else:
-                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{background_asset_bundle_name}/degree_main.png', stream=True).raw)
+                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{background_asset_bundle_name}/{degree_main_name}', stream=True).raw)
                 rank_pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/{main_name}', stream=True).raw)
                 r, g, b, mask = frame.split()
                 if honor_rarity == 'low':
@@ -118,7 +129,7 @@ def generate_honor(honor, is_main=True):
 
             if background_asset_bundle_name == '':
                 rank_pic = None
-                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/degree_sub.png', stream=True).raw)
+                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/{degree_sub_name}', stream=True).raw)
                 try:
                     rank_pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/{sub_name}', stream=True).raw)
                 except:
@@ -132,7 +143,7 @@ def generate_honor(honor, is_main=True):
                     r, g, b, mask = rank_pic.split()
                     pic.paste(rank_pic, (34, 42), mask)
             else:
-                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{background_asset_bundle_name}/degree_sub.png', stream=True).raw)
+                pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{background_asset_bundle_name}/{degree_sub_name}', stream=True).raw)
                 rank_pic = Image.open(requests.get(url=f'{ASSET}/{filename}/{asset_bundle_name}/{sub_name}', stream=True).raw)
                 r, g, b, mask = frame.split()
                 if honor_rarity == 'low':
@@ -212,7 +223,7 @@ def generate_honor(honor, is_main=True):
 
             word_bundle_name = f"honorname_{str(game_character_unit_id1).zfill(2)}" \
                                f"{str(game_character_unit_id2).zfill(2)}_{str(honor['bondsHonorWordId'] % 100).zfill(2)}_01"
-            word = Image.open(requests.get(url=f'{ASSET}/bonds_honor/word/{word_bundle_name}.png'))
+            word = Image.open(requests.get(url=f'{ASSET}/bonds_honor/word/{word_bundle_name}/{word_bundle_name}.png', stream=True).raw)
             r, g, b, mask = word.split()
             pic.paste(word, (int(190 - (word.size[0] / 2)), int(40 - (word.size[1] / 2))), mask)
 
@@ -250,7 +261,7 @@ def generate_honor(honor, is_main=True):
             chara2 = chara2.resize((120, 102))
             r, g, b, mask = chara2.split()
             pic.paste(chara2, (60, -20), mask)
-            mask_img = Image.open('pics/mask_degree_sub.png')
+            mask_img = Image.open('pictures/masks/mask_degree_sub.png')
             r, g, b, mask = mask_img.split()
             pic.putalpha(mask)
 
@@ -271,16 +282,16 @@ def generate_honor(honor, is_main=True):
 
             if honor['honorLevel'] < 5:
                 for i in range(0, honor['honorLevel']):
-                    lv = Image.open('pics/icon_degreeLv.png')
+                    lv = Image.open('pictures/icons/icon_degreeLv.png')
                     r, g, b, mask = lv.split()
                     pic.paste(lv, (54 + 16 * i, 63), mask)
             else:
                 for i in range(0, 5):
-                    lv = Image.open('pics/icon_degreeLv.png')
+                    lv = Image.open('pictures/icons/icon_degreeLv.png')
                     r, g, b, mask = lv.split()
                     pic.paste(lv, (54 + 16 * i, 63), mask)
                 for i in range(0, honor['honorLevel'] - 5):
-                    lv = Image.open('pics/icon_degreeLv6.png')
+                    lv = Image.open('pictures/icons/icon_degreeLv6.png')
                     r, g, b, mask = lv.split()
                     pic.paste(lv, (54 + 16 * i, 63), mask)
 
@@ -291,13 +302,13 @@ def generate_honor(honor, is_main=True):
 
 def get_bonds_background(chara1, chara2, ismain=True):
     if ismain:
-        pic1 = Image.open(f'bonds/{str(chara1)}.png')
-        pic2 = Image.open(f'bonds/{str(chara2)}.png')
+        pic1 = Image.open(f'pictures/bonds/{str(chara1)}.png')
+        pic2 = Image.open(f'pictures/bonds/{str(chara2)}.png')
         pic2 = pic2.crop((190, 0, 380, 80))
         pic1.paste(pic2, (190, 0))
     else:
-        pic1 = Image.open(f'bonds/{str(chara1)}_sub.png')
-        pic2 = Image.open(f'bonds/{str(chara2)}_sub.png')
+        pic1 = Image.open(f'pictures/bonds/{str(chara1)}_sub.png')
+        pic2 = Image.open(f'pictures/bonds/{str(chara2)}_sub.png')
         pic2 = pic2.crop((90, 0, 380, 80))
         pic1.paste(pic2, (90, 0))
     return pic1

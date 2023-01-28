@@ -1,9 +1,12 @@
 import logging
+from io import BytesIO
+
 import discord
 import config
 
 from modules.userprofile import *
 from modules.music import *
+from modules.views import *
 from discord.ext import commands
 from discord import Embed
 from discord import ui
@@ -35,21 +38,32 @@ async def wonderhoy(ctx):
 async def bind(ctx, user_id):
     print(f'{ctx.author} wants to bind {user_id}')
 
+    userprofile = UserProfile(user_id)
+
+    if userprofile.user_id == 0:
+        await ctx.reply(f'这个id获取不到任何数据喵')
+        return
+
     if bind_user_id_with_discord_id(user_id, ctx.author.id):
         userprofile = UserProfile(user_id)
 
         await ctx.reply(f'成功绑定 {user_id}', embed=userprofile.get_discord_embed())
     else:
-        await ctx.reply(f'绑定失败，当前账号已绑定{get_user_id_from_discord_id(ctx.author.id)}')
+        view = ForceRebindView()
+        await ctx.reply(f'绑定失败，当前账号已绑定{get_user_id_from_discord_id(ctx.author.id)}', view=view)
+        await view.wait()
+        if view.value:
+            bind_user_id_with_discord_id(user_id, ctx.author.id, forced=True)
+            await ctx.reply(f'成功绑定 {user_id}', embed=userprofile.get_discord_embed())
 
 
 @bot.command()
 async def userinfo(ctx, user_id=None):
 
     if user_id is None:
-        print(f'{ctx.author} ask for his profile')
-
         user_id = get_user_id_from_discord_id(ctx.author.id)
+
+        print(f'{ctx.author} (id: {ctx.author.id} ask for his profile: {user_id}')
 
         if user_id == 0:
             await ctx.reply(f'没有查询到，可能是你还没有绑定，请使用bind指令绑定你的pjsk账号')
@@ -92,6 +106,39 @@ async def songinfoid(ctx, music_id):
         await ctx.reply(f'找不到这首歌喵')
     else:
         await ctx.reply(embed=music.get_discord_embed())
+
+
+@bot.command()
+async def userprofile(ctx, user_id=None):
+    if user_id is None:
+        print(f'{ctx.author} asked for his user profile')
+
+        user_id = get_user_id_from_discord_id(ctx.author.id)
+
+        if user_id == 0:
+            await ctx.reply(f'没有查询到，可能是你还没有绑定，请使用bind指令绑定你的pjsk账号')
+        else:
+            up = UserProfile(user_id)
+            img = up.generate_profile()
+
+            with BytesIO() as image_binary:
+                up.generate_profile().save(image_binary, 'PNG')
+                image_binary.seek(0)
+                await ctx.send(file=discord.File(fp=image_binary, filename=user_id + '_userprofile.png'))
+    else:
+        print(f'{ctx.author} asked for user profile of {user_id}')
+
+        up = UserProfile(user_id)
+
+        if up.user_id == 0:
+            await ctx.reply(f'找不到该用户喵')
+        else:
+            img = up.generate_profile()
+
+            with BytesIO() as image_binary:
+                up.generate_profile().save(image_binary, 'PNG')
+                image_binary.seek(0)
+                await ctx.send(file=discord.File(fp=image_binary, filename=user_id + '_userprofile.png'))
 
 
 bot.run(config.TOKEN)
